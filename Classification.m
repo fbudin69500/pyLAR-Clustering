@@ -28,8 +28,6 @@ selection_range = size(str2num(selection),2);
 printf("selection: %s\n",selection)
 printf("selection range: %d\n",selection_range)
 group_select{1}=str2num(selection);
-#data_dir = readConfig(arg_list{1},'data_dir');
-#file_list_file_name = readConfig(arg_list{1},'file_list_file_name');
 iter = 0;
 all=[1:selection_range]';
 previous_groups=all; %initialization to a dummy value for the first loop test to be false
@@ -52,10 +50,6 @@ while true
     str_selection=str_selection(1:size(str_selection,2)-1);
     sed_cmd = sprintf("sed -i 's/selection.*/selection = [%s]/' %s\n",str_selection,config)
     system(sed_cmd);
-#    sed_data_dir = strrep(data_dir,'/','\/');
-#    sed_cmd = sprintf("sed -i 's/data_dir.*/data_dir = \"%s\"/' %s\n",sed_data_dir,config)
-#    system(sed_cmd);
-#    sed_cmd = sprintf("sed -i 's/file_list_file_name.*/file_list_file_name = \"%s\"/' %s\n",file_list_file_name,config)
      system(sed_cmd);
     pyLAR_cmd = sprintf('/home/fbudin/Devel/pyLAR/run.py -a lr -s ~/pyLAR/ConfigFiles/Software.txt -c %s', config )
     system(pyLAR_cmd);
@@ -65,8 +59,6 @@ while true
     % Update values for next iteration
   end
   % The two following lines could be done only once but need to be done after LR runs once
-#  data_dir = result_dir;
-#  file_list_file_name = iter_images_to_cluster;
   % Cluster result
   addpath('/home/fbudin/pyLAR/Clustering/Octave/loadedData');
   m=LoadNormalFiles(output_file);
@@ -88,7 +80,7 @@ while true
   group={1,2};
   for i=group
     current=i{:};
-    # Create new configuration files for pyLAR
+    % Create new configuration files for pyLAR
     group_select{current}=all(class==current).-1;
   end
   previous_groups = class;
