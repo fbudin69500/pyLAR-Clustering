@@ -1,9 +1,13 @@
 #!/usr/bin/octave
 arg_list = argv ();
-if nargin ~= 1
-  printf("Usage: ScriptName filename (e.g.: ~/pyLAR/Clustering/pyLARConfiguration/Healthy-20-29F.txt)\n")
+if nargin ~= 2
+  printf("Usage: ScriptName filename (e.g.: ~/pyLAR/Clustering/pyLARConfiguration/Healthy-20-29F.txt) numberOfGroups(int)\n")
   return
 endif
+% Maximum number of iterations
+max_iterations = 10
+%%%%%%%%%%%%%%%%%%%%%
+nbgroups=str2num(arg_list{2})
 % Run pyLAR once on all the data
 result_dir = readConfig(arg_list{1},'result_dir');
 % Create classification directory
@@ -41,6 +45,8 @@ while true
   end
   for i=group
     current=i{:};
+    "groups"
+    current
     iter_result_dir = sprintf("%s/%02d_%02d",result_dir,iter,current)
     sed_result_dir = strrep(iter_result_dir,'/','\/');
     config = sprintf("%s/%s",result_dir,base{2});
@@ -65,24 +71,52 @@ while true
   D=double(m);
   [u s v]=svd(D,false);
   addpath('/home/fbudin/pyLAR/Clustering/Octave/Classification/SSC_ADMM_v1.1');
-  class=SSC(u'*D,0,false,20,false,1,2);
+  class=SSC(u'*D,0,false,20,false,1,nbgroups);
   % compare new groups with previous group and inverted previous group
-  if isequal(class,previous_groups) || isequal(class,3-previous_groups)
-    printf("class\n")
-    class'
+  for i=1:nbgroups
+    for j=1:nbgroups
+      groupeq = false;
+      if isequal(class==i,previous_groups==j)
+        printf("group eq: %d, %d\n",i,j)
+        groupeq=true;
+        break
+      end
+    end
+    if groupeq==false
+      break % no equal group found. Let's continue to iterate
+    end
+  end
+  printf("class\n")
+  class'
+  if groupeq==true
     printf("previous_groups\n")
     previous_groups'
-    printf("invert previous group\n")
-    [3-previous_groups]'
     printf("Stable results: same as previous iteration %d\n",iter)
     break;
   end
-  group={1,2};
-  for i=group
-    current=i{:};
+  clear group
+  groups_output_file = sprintf("Groups%03d.txt",iter);
+  output_file = sprintf("%s/%s",result_dir,groups_output_file);
+  % Removes content of file listing output images
+  fid = fopen(output_file, 'w');
+  for i=1:nbgroups
+    group{i}=i;
     % Create new configuration files for pyLAR
-    group_select{current}=all(class==current).-1;
+    group_select{i}=find(class==i).-1;
+    fprintf(fid,"Group %d:\n",i)
+    for j=1:size(group_select,2)
+      fprintf(fid,"%d ",group_select{i:j})
+    end
+    fprintf(fid,"\n")
   end
+  if fid ~= -1
+    fclose(fid);
+  end
+  group
+  group_select
   previous_groups = class;
   iter = iter + 1;
+  if iter == max_iterations
+    break
+  end
 end
